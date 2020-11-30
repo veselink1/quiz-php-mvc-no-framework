@@ -18,7 +18,7 @@ class UserManager
 
     public function login($email, $password)
     {
-        $user = $this->findUserById($email, true);
+        $user = $this->findById($email, true);
         if (\password_verify($password, $user->password)) {
             $_SESSION['userid'] = $user->email;
             return;
@@ -47,7 +47,7 @@ class UserManager
      * @param String $email
      * @return object
      */
-    public function findUserById($email, $includePassword = false)
+    public function findById($email, $includePassword = false)
     {
         $query = $this->db->buildQuery(
             "
@@ -86,7 +86,7 @@ class UserManager
     public function getCurrentUser()
     {
         if ($this->isLoggedIn()) {
-            return $this->findUserById($_SESSION['userid']);
+            return $this->findById($_SESSION['userid']);
         }
         return false;
     }

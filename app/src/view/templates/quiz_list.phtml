@@ -7,12 +7,12 @@
             <div class="col-md-6">
                 <div class="card shadow text-center">
                     <div class="card-body">
-                        <h5 class="card-title"><?php echo $quiz->name; ?></h5>
-                        <p class="card-text">Author: <?php echo $quiz->author; ?></p>
+                        <h5 class="card-title"><?php $tools->text($quiz->name); ?></h5>
+                        <p class="card-text">Author: <?php $tools->text($quiz->author); ?></p>
                         <a href="<?php $tools->link('quiz?' . \http_build_query([ 'id' => $quiz->id ])); ?>" class="btn btn-primary">Start</a>
                     </div>
                     <div class="card-footer text-muted">
-                        <strong>~<?php echo $quiz->duration; ?> minutes</strong> duration
+                        <strong>~<?php $tools->text($quiz->duration); ?> minutes</strong> duration
                     </div>
                 </div>
             </div>

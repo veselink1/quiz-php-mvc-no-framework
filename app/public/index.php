@@ -66,7 +66,7 @@ $db = new \mysqli(
 );
 $services->register(new DbContext($db));
 
-$quizManager = new QuizManager($services);
+$quizManager = new DummyQuizManager($services);
 $userManager = new UserManager($services);
 
 $services->register($quizManager);

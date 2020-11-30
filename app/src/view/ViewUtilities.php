@@ -35,4 +35,9 @@ class ViewUtilities
     {
         return $this->userManager->getCurrentUser();
     }
+
+    public function text($str)
+    {
+        echo htmlspecialchars($str);
+    }
 }

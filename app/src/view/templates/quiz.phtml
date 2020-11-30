@@ -1,52 +1,68 @@
+<?php
+$isReviewing = \property_exists($context->quiz, 'responses');
+?>
+
 <div class="container">
 
     <form method="POST">
 
-        <h1 class="mt-5"><?php echo $context->quiz->name; ?></h1>
+        <h1 class="mt-5"><?php $tools->text($context->quiz->name); ?></h1>
         <p class="lead">
             <ul class="list-group">
-                <li class="list-group-item list-group-item-action"><strong>~<?php echo $context->quiz->duration; ?> minutes</strong> duration</li>
-                <li class="list-group-item list-group-item-action">Only <strong>multiple-choice</strong> questions</li>
-                <li class="list-group-item list-group-item-action">Created by <strong><?php echo $context->quiz->author; ?></strong></li>
+                <li class="list-group-item"><strong>~<?php $tools->text($context->quiz->duration); ?> minutes</strong> duration</li>
+                <li class="list-group-item">Only <strong>multiple-choice</strong> questions</li>
+                <li class="list-group-item">Created by <strong><?php $tools->text($context->quiz->author); ?></strong></li>
+                <?php if ($isReviewing) { ?>
+                    <li class="list-group-item list-group-item-info">You are reviewing your answers.</li>
+                <?php } ?>
             </ul>
         </p>
 
         <h2 class="mt-3 text-muted">Questions</h2>
 
         <?php
+        $correctAnswerCount = 0;
+        $questionCount = 0;
         foreach ($context->quiz->questions as $index => &$question) {
+            $questionCount++;
         ?>
             <div class="card text-center shadow my-3">
                 <div class="card-body">
-                    <h5 class="card-title"><?php echo $index + 1; ?>. Which SQL statement is used to extract data from a database?</h5>
+                    <h5 class="card-title"><?php $tools->text($index + 1); ?>. <?php $tools->text($question->text); ?></h5>
                 </div>
                 <ul class="list-group">
-                    <li class="list-group-item list-group-item-action" onclick="this.getElementsByTagName('input')[0].click(event)">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="q_<?php echo $index; ?>" id="q_<?php echo $index; ?>" value="A">
-                            <label class="form-check-label" for="q_<?php echo $index; ?>">SELECT</label>
-                        </div>
-                    </li>
-                    <li class="list-group-item list-group-item-action" onclick="this.getElementsByTagName('input')[0].click(event)">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="q_<?php echo $index; ?>" id="q_<?php echo $index; ?>" value="B">
-                            <label class="form-check-label" for="q_<?php echo $index; ?>">OPEN</label>
-                        </div>
-                    </li>
-                    <li class="list-group-item list-group-item-action" onclick="this.getElementsByTagName('input')[0].click(event)">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="q_<?php echo $index; ?>" id="q_<?php echo $index; ?>" value="C">
-                            <label class="form-check-label" for="q_<?php echo $index; ?>">EXTRACT</label>
-                        </div>
-                    </li>
-                    <li class="list-group-item list-group-item-action" onclick="this.getElementsByTagName('input')[0].click(event)">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="q_<?php echo $index; ?>" id="q_<?php echo $index; ?>" value="D">
-                            <label class="form-check-label" for="q_<?php echo $index; ?>">GET</label>
-                        </div>
-                    </li>
+                    <?php
+                    foreach ($question->options as $option_index => &$option) {
+                        $isChecked = $isReviewing && $context->quiz->responses[$index] === $option_index;
+                        $isAnswer = $isReviewing && $question->answer === $option_index;
+                        if ($isChecked && $isAnswer) {
+                            $correctAnswerCount++;
+                        }
+                    ?>
+                        <li class="list-group-item list-group-item-action <?php if ($isAnswer) echo 'list-group-item-success'; ?>" onclick="this.getElementsByTagName('input')[0].click(event)">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="q_<?php $tools->text($index); ?>" id="q_<?php $tools->text($index . '_' . $option_index); ?>" value="A" <?php if ($isChecked) echo 'checked'; ?>>
+                                <label class="form-check-label" for="q_<?php $tools->text($index . '_' . $option_index); ?>"><?php $tools->text($option); ?></label>
+                            </div>
+                        </li>
+                    <?php
+                    }
+                    ?>
                 </ul>
             </div>
+        <?php
+        }
+        ?>
+
+        <?php
+        if ($isReviewing) {
+        ?>
+
+            <div class="alert alert-warning">
+                You got <?php $tools->text($correctAnswerCount); ?> out of <?php $tools->text($questionCount); ?> questions correct.
+                Your final score for this quiz is <?php $tools->text((int)($correctAnswerCount / $questionCount * 100)); ?>%.
+            </div>
+
         <?php
         }
         ?>

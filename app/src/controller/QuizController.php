@@ -5,8 +5,17 @@ require_once __DIR__ . '/../util/Response.php';
 
 class QuizController
 {
+    /**
+     * @var ServiceProvider
+     */
     private $services;
+    /**
+     * @var UserManager
+     */
     private $userManager;
+    /**
+     * @var QuizManager
+     */
     private $quizManager;
 
     public function __construct($services)
@@ -18,22 +27,7 @@ class QuizController
 
     public function listAction()
     {
-        $quizzes = [
-            (object)[
-                'id' => 14,
-                'name' => 'SQL Basics',
-                'author' => 'Peter Parker',
-                'available' => TRUE,
-                'duration' => 60,
-            ],
-            (object)[
-                'id' => 41,
-                'name' => 'PHP Basics',
-                'author' => 'Veselin Karaganev',
-                'available' => TRUE,
-                'duration' => 30,
-            ]
-        ];
+        $quizzes = $this->quizManager->getAvailableQuizzes(10);
 
         return new TemplateView($this->services, 'quiz_list', [
             'availableQuizzes' => $quizzes,
@@ -41,22 +35,13 @@ class QuizController
         ]);
     }
 
-    public function quizAction()
+    public function quizAction($request)
     {
         if (!$this->userManager->isLoggedIn()) {
             Response::redirect('login');
         }
 
-        $quiz = (object)[
-            'id' => 41,
-            'name' => 'PHP Basics',
-            'author' => 'Veselin Karaganev',
-            'available' => TRUE,
-            'duration' => 30,
-            'questions' => [
-                1, 2, 3, 4 // Dummy values
-            ],
-        ];
+        $quiz = $this->quizManager->findById((int)$request['id']);
         return new TemplateView($this->services, 'quiz', [
             'quiz' => $quiz,
         ]);
