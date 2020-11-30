@@ -2,11 +2,14 @@
 
 class ViewUtilities
 {
-    private $currentUser;
+    /**
+     * @var UserManager
+     */
+    private $userManager;
 
-    public function __construct($currentUser = null)
+    public function __construct($services)
     {
-        $this->currentUser = $currentUser;
+        $this->userManager = $services->get('UserManager');
     }
 
     public function static($path)
@@ -21,5 +24,15 @@ class ViewUtilities
     public function link($route)
     {
         echo ROUTER_BASE_URL . '/' . $route;
+    }
+
+    public function isLoggedIn()
+    {
+        return $this->userManager->isLoggedIn();
+    }
+
+    public function getCurrentUser()
+    {
+        return $this->userManager->getCurrentUser();
     }
 }

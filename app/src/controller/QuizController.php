@@ -1,16 +1,19 @@
 <?php
 
 require_once __DIR__ . '/../view/TemplateView.php';
+require_once __DIR__ . '/../util/Response.php';
 
 class QuizController
 {
+    private $services;
     private $userManager;
     private $quizManager;
 
     public function __construct($services)
     {
-        $userManager = $services->get('UserManager');
-        $quizManager = $services->get('QuizManager');
+        $this->services = $services;
+        $this->userManager = $services->get('UserManager');
+        $this->quizManager = $services->get('QuizManager');
     }
 
     public function listAction()
@@ -32,7 +35,7 @@ class QuizController
             ]
         ];
 
-        return new TemplateView('quiz_list', [
+        return new TemplateView($this->services, 'quiz_list', [
             'availableQuizzes' => $quizzes,
             'takenQuizzes' => [],
         ]);
@@ -40,6 +43,10 @@ class QuizController
 
     public function quizAction()
     {
+        if (!$this->userManager->isLoggedIn()) {
+            Response::redirect('login');
+        }
+
         $quiz = (object)[
             'id' => 41,
             'name' => 'PHP Basics',
@@ -50,7 +57,7 @@ class QuizController
                 1, 2, 3, 4 // Dummy values
             ],
         ];
-        return new TemplateView('quiz', [
+        return new TemplateView($this->services, 'quiz', [
             'quiz' => $quiz,
         ]);
     }

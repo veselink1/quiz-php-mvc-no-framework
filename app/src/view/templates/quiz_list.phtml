@@ -1,11 +1,11 @@
-<div class="container">
+<div class="container mt-5">
 
     <div class="row">
         <?php
         foreach ($context->availableQuizzes as &$quiz) {
         ?>
             <div class="col-md-6">
-                <div class="card text-center">
+                <div class="card shadow text-center">
                     <div class="card-body">
                         <h5 class="card-title"><?php echo $quiz->name; ?></h5>
                         <p class="card-text">Author: <?php echo $quiz->author; ?></p>

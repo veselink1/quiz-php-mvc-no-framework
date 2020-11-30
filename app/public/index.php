@@ -1,10 +1,13 @@
 <?php
 
+define('DEBUG', TRUE);
 define('BASE_URL', '/public');
 define('ROUTER_BASE_URL', '/public/index.php');
 
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+if (DEBUG) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
+}
 
 // Retrieve DB config
 $dbConfig = require __DIR__ . '/../config/database.config.php';
@@ -25,18 +28,35 @@ switch ($route) {
         $action = 'loginAction';
         break;
 
+    case '/signup':
+        $controllerName = 'UserController';
+        $action = 'signupAction';
+        break;
+
+    case '/logout':
+        $controllerName = 'UserController';
+        $action = 'logoutAction';
+        break;
+
     case '':
     case '/':
-    default:
         $controllerName = 'QuizController';
         $action = 'listAction';
+        break;
+
+    default:
+        $controllerName = 'ClientErrorController';
+        $action = 'notFoundAction';
         break;
 }
 
 require '../src/util/SimpleServiceProvider.php';
+require '../src/util/DbContext.php';
 require '../src/controller/' . $controllerName . '.php';
 require '../src/model/UserManager.php';
 require '../src/model/QuizManager.php';
+
+$services = new SimpleServiceProvider();
 
 $db = new \mysqli(
     $dbConfig['host'],
@@ -44,11 +64,11 @@ $db = new \mysqli(
     $dbConfig['password'],
     $dbConfig['dbname']
 );
+$services->register(new DbContext($db));
 
-$quizManager = new QuizManager($db);
-$userManager = new UserManager($db);
+$quizManager = new QuizManager($services);
+$userManager = new UserManager($services);
 
-$services = new SimpleServiceProvider();
 $services->register($quizManager);
 $services->register($userManager);
 
@@ -57,6 +77,15 @@ if (\mysqli_connect_errno()) {
 }
 
 $controller = new $controllerName($services);
-$view = $controller->{$action}($_REQUEST, $_SERVER['REQUEST_METHOD']);
+
+try {
+    $view = $controller->{$action}($_REQUEST, $_SERVER['REQUEST_METHOD']);
+} catch (\Throwable $th) {
+    if (DEBUG) {
+        throw $th;
+    } else {
+        echo 'An error occurred! If this continues to happen, please report it to the website administrator!';
+    }
+}
 
 echo $view->renderView();

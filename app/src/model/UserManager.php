@@ -3,17 +3,13 @@
 class UserManager
 {
     /**
-     * @var mysqli
+     * @var DbContext
      */
     private $db;
 
-    public function __construct($dbConnection)
+    public function __construct($services)
     {
-        if ($dbConnection instanceof \mysqli) {
-            $this->db = $dbConnection;
-        } else {
-            throw new \Exception('Argument is not a mysqli object');
-        }
+        $this->db = $services->get('DbContext');
 
         if(!isset($_SESSION)) {
             session_start();
@@ -22,44 +18,58 @@ class UserManager
 
     public function login($email, $password)
     {
-        $user = $this->findOneUserById($email, $password);
-        if ($user) {
-            $_SESSION['userid'] = $user['id'];
-            return true;
-        } else {
-            return false;
+        $user = $this->findUserById($email, true);
+        if (\password_verify($password, $user->password)) {
+            $_SESSION['userid'] = $user->email;
+            return;
+        }
+        throw new \Exception('Incorrect credentials');
+    }
+
+    public function register($email, $password)
+    {
+        $hash = $this->hash($password);
+        $query = $this->db->buildQuery(
+            "
+            INSERT INTO user (email, password)
+            VALUES (':email', ':password')
+            ",
+            ['email' => $email, 'password' => $hash]
+        );
+
+        if ($this->db->getConnection()->query($query) !== TRUE) {
+            throw new \Exception("Failed to register $email! Reason: " . $this->db->getConnection()->error);
         }
     }
 
     /**
-     * Get user by it's credentials
+     * Get user by their ID.
      * @param String $email
-     * @param String $password
-     * @return array
+     * @return object
      */
-    public function findOneUserById($email, $password)
+    public function findUserById($email, $includePassword = false)
     {
-        $query = ""
-            . "SELECT user.* "
-            . "FROM user "
-            . "WHERE user.email = '%s' AND user.password = '%s'";
+        $query = $this->db->buildQuery(
+            "
+            SELECT * FROM user
+            WHERE email = ':email'
+            LIMIT 1
+            ",
+            ['email' => $email]
+        );
 
-        $query = \sprintf($query, $this->db->real_escape_string($email), $this->hash($password));
-        if ($result = $this->db->query($query)) {
+        if ($result = $this->db->getConnection()->query($query)) {
             $row = $result->fetch_assoc();
             if (!$row) {
-                return false;
+                throw new \Exception('User not found');
             }
-            $user = [
-                'id' => $row['id'],
-                'email' => $row['email'],
-                'name' => $row['name']
-            ];
+            if (!$includePassword) {
+                unset($row['password']);
+            }
             $result->close();
-        } else {
-            die($this->db->error);
+            return (object)$row;
         }
-        return $user;
+        throw new \Exception('Connection to DB reset!');
     }
 
     public function logout()
@@ -70,12 +80,19 @@ class UserManager
 
     public function isLoggedIn()
     {
-        if (isset($_SESSION['userid']) && $_SESSION['userid']) return $_SESSION['userid'];
+        return isset($_SESSION['userid']) && $_SESSION['userid'];
+    }
+
+    public function getCurrentUser()
+    {
+        if ($this->isLoggedIn()) {
+            return $this->findUserById($_SESSION['userid']);
+        }
         return false;
     }
 
     private function hash($password)
     {
-        return \hash('sha512', $this->db->real_escape_string($password));
+        return \password_hash($password, PASSWORD_BCRYPT);
     }
 }

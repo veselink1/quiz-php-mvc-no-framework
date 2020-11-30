@@ -5,19 +5,19 @@ require_once __DIR__ . '/ViewUtilities.php';
 
 class TemplateView implements ViewInterface
 {
+    private $services;
     private $viewName;
     private $context;
 
-    public function __construct($viewName, $context = array())
+    public function __construct($services, $viewName, $context = array())
     {
+        $this->services = $services;
         $this->viewName = $viewName;
         $this->context = (object)$context;
     }
 
     public function renderView()
     {
-        $this->blocks = [];
-
         \ob_start();
         $returnValue = $this->renderFile();
         $content = \ob_get_clean();
@@ -29,7 +29,10 @@ class TemplateView implements ViewInterface
                 throw new \Exception('Incorrect usage of return from view!');
             }
 
-            $parentView = new TemplateView($returnValue['extends'], ['content' => $content]);
+            $parentContext = (array)$this->context;
+            $parentContext['content'] = $content;
+
+            $parentView = new TemplateView($this->services, $returnValue['extends'], $parentContext);
             return $parentView->renderView();
         }
         else
@@ -42,7 +45,7 @@ class TemplateView implements ViewInterface
     {
         // Make $context directly visible in template
         $context = $this->context;
-        $tools = new ViewUtilities();
+        $tools = new ViewUtilities($this->services);
         return require __DIR__ . '/templates/' . $this->viewName . '.phtml';
     }
 

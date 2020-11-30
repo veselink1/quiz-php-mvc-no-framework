@@ -3,17 +3,13 @@
 class QuizManager
 {
     /**
-     * @var mysqli
+     * @var DbContext
      */
     private $db;
 
-    public function __construct($dbConnection)
+    public function __construct($services)
     {
-        if ($dbConnection instanceof \mysqli) {
-            $this->db = $dbConnection;
-        } else {
-            throw new \Exception('Argument is not a mysqli object');
-        }
+        $this->db = $services->get('DbContext');
         \session_start();
     }
 }
