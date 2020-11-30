@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/ViewInterface.php';
+require_once __DIR__ . '/ViewUtilities.php';
 
 class TemplateView implements ViewInterface
 {
@@ -41,6 +42,7 @@ class TemplateView implements ViewInterface
     {
         // Make $context directly visible in template
         $context = $this->context;
+        $tools = new ViewUtilities();
         return require __DIR__ . '/templates/' . $this->viewName . '.phtml';
     }
 

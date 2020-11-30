@@ -9,7 +9,7 @@
                     <div class="card-body">
                         <h5 class="card-title"><?php echo $quiz->name; ?></h5>
                         <p class="card-text">Author: <?php echo $quiz->author; ?></p>
-                        <a href="#" class="btn btn-primary">Start</a>
+                        <a href="<?php $tools->link('quiz?' . \http_build_query([ 'id' => $quiz->id ])); ?>" class="btn btn-primary">Start</a>
                     </div>
                     <div class="card-footer text-muted">
                         <strong>~<?php echo $quiz->duration; ?> minutes</strong> duration

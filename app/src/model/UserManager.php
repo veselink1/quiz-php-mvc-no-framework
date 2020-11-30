@@ -33,8 +33,8 @@ class UserManager
 
     /**
      * Get user by it's credentials
-     * @param Srting $email
-     * @param Srting $password
+     * @param String $email
+     * @param String $password
      * @return array
      */
     public function findOneUserById($email, $password)
