@@ -1,0 +1,28 @@
+<div class="container">
+
+    <div class="row">
+        <?php
+        foreach ($context->availableQuizzes as &$quiz) {
+        ?>
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo $quiz->name; ?></h5>
+                        <p class="card-text">Author: <?php echo $quiz->author; ?></p>
+                        <a href="#" class="btn btn-primary">Start</a>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <strong>~<?php echo $quiz->duration; ?> minutes</strong> duration
+                    </div>
+                </div>
+            </div>
+        <?php
+        }
+        ?>
+    </div>
+
+</div>
+
+<?php
+return ['extends' => '_layout'];
+?>
