@@ -36,7 +36,7 @@
     </div>
 
     <?php
-    if ($tools->isLoggedIn()) {
+    if ($tools->isLoggedIn() && $user->is_staff) {
     ?>
 
         <h2 class="my-3">My Quizzes</h2>

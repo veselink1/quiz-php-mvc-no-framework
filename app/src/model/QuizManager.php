@@ -66,7 +66,8 @@ class QuizManager
         return $this->db->getConnection()->insert_id;
     }
 
-    public function updateQuiz($quiz) {
+    public function updateQuiz($quiz)
+    {
         $query = $this->db->buildQuery(
             "
             UPDATE quiz
@@ -80,6 +81,21 @@ class QuizManager
 
         if ($this->db->getConnection()->query($query) !== TRUE) {
             throw new \Exception('Quiz not updated');
+        }
+    }
+
+    public function deleteQuiz($quiz)
+    {
+        $query = $this->db->buildQuery(
+            "
+            DELETE FROM quiz
+                WHERE quiz.id = :id;
+            ",
+            ['id' => $quiz->id]
+        );
+
+        if ($this->db->getConnection()->query($query) !== TRUE) {
+            throw new \Exception('Quiz not deleted');
         }
     }
 
@@ -108,6 +124,46 @@ class QuizManager
         throw new \Exception('Connection to DB reset!');
     }
 
+    public function getSubmission($user, $quiz)
+    {
+        $query = $this->db->buildQuery(
+            "
+            SELECT s.date_of_attempt, ans.question_no, ans.answer as submitted,
+                (SELECT question.answer FROM question WHERE question.quiz_id = :quiz_id AND question.no = ans.question_no) as answer
+                FROM submission s
+                INNER JOIN submitted_answer ans
+                    ON ans.user_id = s.user_id AND ans.quiz_id = s.quiz_id
+                WHERE s.user_id = :user_id AND s.quiz_id = :quiz_id
+            ",
+            ['user_id' => $user->id, 'quiz_id' => $quiz->id]
+        );
+
+        if ($result = $this->db->getConnection()->query($query)) {
+            $date = null;
+            $responses = [];
+            while ($row = $result->fetch_assoc()) {
+                $date = $row['date_of_attempt'];
+                $responses[$row['question_no']] = (object)[
+                    'submitted' => $row['submitted'],
+                    'answer' => $row['answer'],
+                ];
+            }
+            $result->close();
+
+            if ($date === null) {
+                return false;
+            }
+
+            return (object)[
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'date_of_attempt' => $date,
+                'responses' => $responses,
+            ];
+        }
+        throw new \Exception('Connection to DB reset!');
+    }
+
     public function getQuestions($id)
     {
         $query = $this->db->buildQuery(
@@ -128,6 +184,7 @@ class QuizManager
                     'text' => $row['text'],
                     'answer' => $row['answer'],
                     'no' => $row['no'],
+                    'quiz_id' => $id,
                     'options' => [$row['opt_a'], $row['opt_b'], $row['opt_c'], $row['opt_d']],
                 ];
             }
@@ -164,6 +221,32 @@ class QuizManager
             $result->close();
             return $results;
         }
-        throw new \Exception('Connection to DB reset!');
+        throw new \Exception('Connection to DB reset! ' . $this->db->getConnection()->error);
+    }
+
+    public function addSubmission($user, $quiz, $responses)
+    {
+        $query = $this->db->buildQuery(
+            "
+            INSERT INTO submission (user_id, quiz_id, date_of_attempt)
+                VALUES (:user_id, :quiz_id, NOW());
+            ",
+            ['user_id' => $user->id, 'quiz_id' => $quiz->id]
+        );
+
+        foreach ($responses as $question_no => $answer) {
+            $query .= $this->db->buildQuery(
+                "
+                INSERT INTO submitted_answer (user_id, quiz_id, question_no, answer)
+                    VALUES (:user_id, :quiz_id, :question_no, :answer);
+                ",
+                ['user_id' => $user->id, 'quiz_id' => $quiz->id, 'question_no' => $question_no, 'answer' => $answer]
+            );
+        }
+
+        if ($this->db->getConnection()->multi_query($query) !== TRUE) {
+            throw new \Exception('Answer not recorded! Reason: ' . $this->db->getConnection()->error);
+        }
+        return $this->db->getConnection()->insert_id;
     }
 }

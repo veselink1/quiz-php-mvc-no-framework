@@ -1,5 +1,5 @@
 <?php
-$isReviewing = \property_exists($context->quiz, 'responses');
+$isReviewing = \property_exists($context, 'submission') && $context->submission;
 ?>
 
 <div class="container">
@@ -33,8 +33,8 @@ $isReviewing = \property_exists($context->quiz, 'responses');
                 <ul class="list-group">
                     <?php
                     foreach ($question->options as $option_index => &$option) {
-                        $isChecked = $isReviewing && $context->quiz->responses[$question->no] === $option_index;
-                        $isAnswer = $isReviewing && $question->answer === $option_index;
+                        $isChecked = $isReviewing && $context->submission->responses[$question->no]->submitted == $option_index;
+                        $isAnswer = $isReviewing && $question->answer == $option_index;
                         if ($isChecked && $isAnswer) {
                             $correctAnswerCount++;
                         }
@@ -55,7 +55,7 @@ $isReviewing = \property_exists($context->quiz, 'responses');
         ?>
 
         <?php
-        if ($isReviewing) {
+        if ($isReviewing && $questionCount > 0) {
         ?>
 
             <div class="alert alert-warning">
@@ -68,7 +68,7 @@ $isReviewing = \property_exists($context->quiz, 'responses');
         ?>
 
         <div class="text-right">
-            <button type="submit" value="submit" class="btn btn-primary btn-lg mt-3">Submit</button>
+            <button type="submit" <?php if ($isReviewing) echo 'disabled'; ?> value="submit" class="btn btn-primary btn-lg mt-3">Submit</button>
         </div>
 
     </form>
