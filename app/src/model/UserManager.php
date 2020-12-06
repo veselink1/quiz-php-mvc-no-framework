@@ -7,6 +7,9 @@ class UserManager
      */
     private $db;
 
+    private $lastUserID;
+    private $lastUser;
+
     public function __construct($services)
     {
         $this->db = $services->get('DbContext');
@@ -26,15 +29,15 @@ class UserManager
         throw new \Exception('Incorrect credentials');
     }
 
-    public function register($email, $password)
+    public function register($email, $password, $name)
     {
         $hash = $this->hash($password);
         $query = $this->db->buildQuery(
             "
-            INSERT INTO user (email, password)
-            VALUES (':email', ':password')
+            INSERT INTO user (email, name, password)
+            VALUES (':email', ':name', ':password')
             ",
-            ['email' => $email, 'password' => $hash]
+            ['email' => $email, 'name' => $name, 'password' => $hash]
         );
 
         if ($this->db->getConnection()->query($query) !== TRUE) {
@@ -86,7 +89,12 @@ class UserManager
     public function getCurrentUser()
     {
         if ($this->isLoggedIn()) {
-            return $this->findById($_SESSION['userid']);
+            $userID = $_SESSION['userid'];
+            if ($userID == $this->lastUserID) {
+                return $this->lastUser;
+            }
+            $this->lastUserID = $userID;
+            return $this->lastUser = $this->findById($userID);
         }
         return false;
     }

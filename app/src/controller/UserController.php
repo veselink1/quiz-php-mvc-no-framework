@@ -37,7 +37,7 @@ class UserController
     public function signupAction($request, $method)
     {
         if ($method == 'POST') {
-            $this->userManager->register($request['email'], $request['password']);
+            $this->userManager->register($request['email'], $request['password'], $request['name']);
             Response::setLocation('login');
             return new TemplateView($this->services, 'login', [
                 'alerts' => [

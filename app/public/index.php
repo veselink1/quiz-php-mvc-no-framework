@@ -23,6 +23,16 @@ switch ($route) {
         $action = 'quizAction';
         break;
 
+    case '/quiz/new':
+        $controllerName = 'QuizController';
+        $action = 'newQuizAction';
+        break;
+
+    case '/quiz/edit':
+        $controllerName = 'QuizController';
+        $action = 'editQuizAction';
+        break;
+
     case '/login':
         $controllerName = 'UserController';
         $action = 'loginAction';
@@ -66,7 +76,7 @@ $db = new \mysqli(
 );
 $services->register(new DbContext($db));
 
-$quizManager = new DummyQuizManager($services);
+$quizManager = new QuizManager($services);
 $userManager = new UserManager($services);
 
 $services->register($quizManager);

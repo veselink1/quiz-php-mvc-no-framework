@@ -1,0 +1,71 @@
+<div class="container pt-5">
+
+    <form method="POST">
+
+        <h1 class="mb-3">
+            <?php
+            if ($context->quiz) {
+                echo 'Edit Quiz';
+            } else {
+                echo 'New Quiz';
+            }
+            ?>
+        </h1>
+
+        <div class="input-group input-group-lg mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Quiz Title</span>
+            </div>
+            <input name="title" type="text" placeholder="Title" class="form-control" value="<?php if ($context->quiz) $tools->text($context->quiz->title); ?>">
+        </div>
+
+        <div class="input-group input-group-lg mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Duration</span>
+            </div>
+            <input name="duration" type="number" min="0" max="1000" placeholder="Duration (minutes)" class="form-control" value="<?php if ($context->quiz) $tools->text($context->quiz->duration); ?>">
+        </div>
+
+        <div class="text-right">
+            <button type="submit" value="submit" class="btn btn-primary btn-lg mt-3">Save Changes</button>
+        </div>
+
+        <?php
+        if ($context->quiz) {
+        ?>
+            <h2 class="mb-3">
+                Questions
+            </h2>
+            <?php
+            foreach ($context->quiz->questions as &$question) {
+            ?>
+                <div class="card text-center shadow my-3">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <?php $tools->text($question->no); ?>. <?php $tools->text($question->text); ?>
+                        </h5>
+                    </div>
+                    <ul class="list-group">
+                        <?php
+                        foreach ($question->options as $option_index => &$option) {
+                        ?>
+                            <li class="list-group-item list-group-item-action">
+                                <?php $tools->text($option); ?>
+                            </li>
+                        <?php
+                        }
+                        ?>
+                    </ul>
+                </div>
+        <?php
+            }
+        }
+        ?>
+
+    </form>
+
+</div>
+
+<?php
+return ['extends' => '_layout'];
+?>

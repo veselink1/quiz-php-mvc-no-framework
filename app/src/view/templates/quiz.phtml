@@ -6,7 +6,7 @@ $isReviewing = \property_exists($context->quiz, 'responses');
 
     <form method="POST">
 
-        <h1 class="mt-5"><?php $tools->text($context->quiz->name); ?></h1>
+        <h1 class="mt-5"><?php $tools->text($context->quiz->title); ?></h1>
         <p class="lead">
             <ul class="list-group">
                 <li class="list-group-item"><strong>~<?php $tools->text($context->quiz->duration); ?> minutes</strong> duration</li>
@@ -23,17 +23,17 @@ $isReviewing = \property_exists($context->quiz, 'responses');
         <?php
         $correctAnswerCount = 0;
         $questionCount = 0;
-        foreach ($context->quiz->questions as $index => &$question) {
+        foreach ($context->quiz->questions as &$question) {
             $questionCount++;
         ?>
             <div class="card text-center shadow my-3">
                 <div class="card-body">
-                    <h5 class="card-title"><?php $tools->text($index + 1); ?>. <?php $tools->text($question->text); ?></h5>
+                    <h5 class="card-title"><?php $tools->text($question->no); ?>. <?php $tools->text($question->text); ?></h5>
                 </div>
                 <ul class="list-group">
                     <?php
                     foreach ($question->options as $option_index => &$option) {
-                        $isChecked = $isReviewing && $context->quiz->responses[$index] === $option_index;
+                        $isChecked = $isReviewing && $context->quiz->responses[$question->no] === $option_index;
                         $isAnswer = $isReviewing && $question->answer === $option_index;
                         if ($isChecked && $isAnswer) {
                             $correctAnswerCount++;
@@ -41,8 +41,8 @@ $isReviewing = \property_exists($context->quiz, 'responses');
                     ?>
                         <li class="list-group-item list-group-item-action <?php if ($isAnswer) echo 'list-group-item-success'; ?>" onclick="this.getElementsByTagName('input')[0].click(event)">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="q_<?php $tools->text($index); ?>" id="q_<?php $tools->text($index . '_' . $option_index); ?>" value="A" <?php if ($isChecked) echo 'checked'; ?>>
-                                <label class="form-check-label" for="q_<?php $tools->text($index . '_' . $option_index); ?>"><?php $tools->text($option); ?></label>
+                                <input class="form-check-input" type="radio" name="q_<?php $tools->text($question->no); ?>" id="q_<?php $tools->text($question->no . '_' . $option_index); ?>" value="<?php $tools->text($option_index); ?>" <?php if ($isChecked) echo 'checked'; ?>>
+                                <label class="form-check-label" for="q_<?php $tools->text($question->no . '_' . $option_index); ?>"><?php $tools->text($option); ?></label>
                             </div>
                         </li>
                     <?php

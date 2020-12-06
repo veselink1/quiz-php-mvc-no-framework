@@ -1,15 +1,29 @@
 <div class="container mt-5">
 
+    <?php
+    if ($tools->isLoggedIn() && ($user = $tools->getCurrentUser()) && $user->is_staff) {
+    ?>
+        <div class="d-flex justify-content-end my-3">
+            <a class="btn btn-lg btn-warning" href="<?php $tools->link('quiz/new'); ?>">
+                + New Quiz
+            </a>
+        </div>
+    <?php
+    }
+    ?>
+
+    <h2 class="my-3">Available Quizzes</h2>
+
     <div class="row">
         <?php
         foreach ($context->availableQuizzes as &$quiz) {
         ?>
             <div class="col-md-6">
-                <div class="card shadow text-center">
+                <div class="card shadow text-center mb-3">
                     <div class="card-body">
-                        <h5 class="card-title"><?php $tools->text($quiz->name); ?></h5>
+                        <h5 class="card-title"><?php $tools->text($quiz->title); ?></h5>
                         <p class="card-text">Author: <?php $tools->text($quiz->author); ?></p>
-                        <a href="<?php $tools->link('quiz?' . \http_build_query([ 'id' => $quiz->id ])); ?>" class="btn btn-primary">Start</a>
+                        <a href="<?php $tools->link('quiz?' . \http_build_query(['id' => $quiz->id])); ?>" class="btn btn-primary">Start</a>
                     </div>
                     <div class="card-footer text-muted">
                         <strong>~<?php $tools->text($quiz->duration); ?> minutes</strong> duration
@@ -20,6 +34,36 @@
         }
         ?>
     </div>
+
+    <?php
+    if ($tools->isLoggedIn()) {
+    ?>
+
+        <h2 class="my-3">My Quizzes</h2>
+
+        <div class="row">
+            <?php
+            foreach ($context->myQuizzes as &$quiz) {
+            ?>
+                <div class="col-md-6">
+                    <div class="card shadow text-center mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><?php $tools->text($quiz->title); ?></h5>
+                            <a href="<?php $tools->link('quiz/edit?' . \http_build_query(['id' => $quiz->id])); ?>" class="btn btn-secondary">Edit</a>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <strong>~<?php $tools->text($quiz->duration); ?> minutes</strong> duration
+                        </div>
+                    </div>
+                </div>
+            <?php
+            }
+            ?>
+        </div>
+
+    <?php
+    }
+    ?>
 
 </div>
 
