@@ -1,18 +1,15 @@
 <?php
 
-class UserManager
-{
-    /**
-     * @var DbContext
-     */
-    private $db;
+require_once __DIR__ . '/RecordManager.php';
 
+class UserManager extends RecordManager
+{
     private $lastUserID;
     private $lastUser;
 
     public function __construct($services)
     {
-        $this->db = $services->get('DbContext');
+        parent::__construct($services->get('DbContext'));
 
         if(!isset($_SESSION)) {
             session_start();
@@ -40,9 +37,7 @@ class UserManager
             ['email' => $email, 'name' => $name, 'password' => $hash]
         );
 
-        if ($this->db->getConnection()->query($query) !== TRUE) {
-            throw new \Exception("Failed to register $email! Reason: " . $this->db->getConnection()->error);
-        }
+        $this->execute($query);
     }
 
     /**
@@ -61,18 +56,12 @@ class UserManager
             ['email' => $email]
         );
 
-        if ($result = $this->db->getConnection()->query($query)) {
-            $row = $result->fetch_assoc();
-            if (!$row) {
-                throw new \Exception('User not found');
-            }
+        return $this->queryOne($query, function($row) use ($includePassword) {
             if (!$includePassword) {
                 unset($row['password']);
             }
-            $result->close();
             return (object)$row;
-        }
-        throw new \Exception('Connection to DB reset!');
+        });
     }
 
     public function logout()

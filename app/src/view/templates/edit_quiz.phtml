@@ -42,6 +42,13 @@
         </div>
 
         <div class="text-right">
+            <?php
+            if ($context->quiz) {
+            ?>
+                <a class="btn btn-outline-success btn-lg mt-3" href="<?php $tools->link("quiz/question/new?quiz={$context->quiz->id}") ?>">New Question</a>
+            <?php
+            }
+            ?>
             <button type="submit" value="submit" class="btn btn-primary btn-lg mt-3">Save Changes</button>
         </div>
 
@@ -56,8 +63,15 @@
             ?>
                 <div class="card text-center shadow my-3">
                     <div class="card-body">
-                        <h5 class="card-title">
-                            <?php $tools->text($question->no); ?>. <?php $tools->text($question->text); ?>
+                        <h5 class="card-title d-flex flex-row align-items-center">
+                            <div class="flex-fill">
+                                <?php $tools->text($question->no); ?>. <?php $tools->text($question->text); ?>
+                            </div>
+                            <div>
+                                <a class="btn btn-outline-warning" href="<?php $tools->link("quiz/question/edit?quiz={$context->quiz->id}&no={$question->no}"); ?>">
+                                    EDIT
+                                </a>
+                            </div>
                         </h5>
                     </div>
                     <ul class="list-group">

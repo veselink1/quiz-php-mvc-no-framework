@@ -1,15 +1,16 @@
 <?php
 
-class QuizManager
-{
-    /**
-     * @var DbContext
-     */
-    private $db;
+require_once __DIR__ . '/RecordManager.php';
 
+function QM_toObject($array) {
+    return (object)$array;
+}
+
+class QuizManager extends RecordManager
+{
     public function __construct($services)
     {
-        $this->db = $services->get('DbContext');
+        parent::__construct($services->get('DbContext'));
     }
 
     public function getAvailableQuizzes($limit, $offset = 0)
@@ -32,22 +33,14 @@ class QuizManager
         $query = $this->db->buildQuery(
             "
             SELECT quiz.id, quiz.duration, quiz.title, quiz.available
-                FROM quiz
-                WHERE quiz.author_id = :author_id
-                LIMIT :limit OFFSET :offset
+            FROM quiz
+            WHERE quiz.author_id = :author_id
+            LIMIT :limit OFFSET :offset
             ",
             ['limit' => $limit, 'offset' => $offset, 'author_id' => $author->id]
         );
 
-        $results = [];
-        if ($result = $this->db->getConnection()->query($query)) {
-            while ($row = $result->fetch_assoc()) {
-                $results[] = (object)$row;
-            }
-            $result->close();
-            return $results;
-        }
-        throw new \Exception('Connection to DB reset!');
+        return $this->queryAll($query);
     }
 
     public function addQuiz($author, $title, $duration, $available)
@@ -60,10 +53,7 @@ class QuizManager
             ['author_id' => $author->id, 'title' => $title, 'duration' => $duration, 'available' => $available]
         );
 
-        if ($this->db->getConnection()->query($query) !== TRUE) {
-            throw new \Exception('Quiz not created');
-        }
-        return $this->db->getConnection()->insert_id;
+        return $this->execute($query);
     }
 
     public function updateQuiz($quiz)
@@ -71,17 +61,16 @@ class QuizManager
         $query = $this->db->buildQuery(
             "
             UPDATE quiz
-                SET title = ':title',
-                    duration = :duration,
-                    available = :available
-                WHERE quiz.id = :id;
+            SET
+                title = ':title',
+                duration = :duration,
+                available = :available
+            WHERE quiz.id = :id;
             ",
             ['id' => $quiz->id, 'title' => $quiz->title, 'duration' => $quiz->duration, 'available' => $quiz->available]
         );
 
-        if ($this->db->getConnection()->query($query) !== TRUE) {
-            throw new \Exception('Quiz not updated');
-        }
+        return $this->execute($query);
     }
 
     public function deleteQuiz($quiz)
@@ -89,14 +78,12 @@ class QuizManager
         $query = $this->db->buildQuery(
             "
             DELETE FROM quiz
-                WHERE quiz.id = :id;
+            WHERE quiz.id = :id;
             ",
             ['id' => $quiz->id]
         );
 
-        if ($this->db->getConnection()->query($query) !== TRUE) {
-            throw new \Exception('Quiz not deleted');
-        }
+        $this->execute($query);
     }
 
     public function findById($id)
@@ -104,24 +91,17 @@ class QuizManager
         $query = $this->db->buildQuery(
             "
             SELECT quiz.id, quiz.duration, quiz.title, quiz.available, a.name as author, a.id as author_id
-                FROM quiz
-                INNER JOIN `user` a ON a.id = quiz.author_id
-                WHERE quiz.id = :id
+            FROM quiz
+            INNER JOIN `user` a ON a.id = quiz.author_id
+            WHERE quiz.id = :id
             ",
             ['id' => $id]
         );
 
-        if ($result = $this->db->getConnection()->query($query)) {
-            $row = $result->fetch_assoc();
-            if (!$row) {
-                throw new \Exception('Quiz not found');
-            }
-            $result->close();
-
+        return $this->queryOne($query, function($row) use ($id) {
             $row['questions'] = $this->getQuestions($id);
             return (object)$row;
-        }
-        throw new \Exception('Connection to DB reset!');
+        });
     }
 
     public function getSubmission($user, $quiz)
@@ -130,38 +110,35 @@ class QuizManager
             "
             SELECT s.date_of_attempt, ans.question_no, ans.answer as submitted,
                 (SELECT question.answer FROM question WHERE question.quiz_id = :quiz_id AND question.no = ans.question_no) as answer
-                FROM submission s
-                INNER JOIN submitted_answer ans
-                    ON ans.user_id = s.user_id AND ans.quiz_id = s.quiz_id
-                WHERE s.user_id = :user_id AND s.quiz_id = :quiz_id
+            FROM submission s
+            INNER JOIN submitted_answer ans
+                ON ans.user_id = s.user_id AND ans.quiz_id = s.quiz_id
+            WHERE s.user_id = :user_id AND s.quiz_id = :quiz_id
             ",
             ['user_id' => $user->id, 'quiz_id' => $quiz->id]
         );
 
-        if ($result = $this->db->getConnection()->query($query)) {
-            $date = null;
-            $responses = [];
-            while ($row = $result->fetch_assoc()) {
-                $date = $row['date_of_attempt'];
-                $responses[$row['question_no']] = (object)[
-                    'submitted' => $row['submitted'],
-                    'answer' => $row['answer'],
-                ];
-            }
-            $result->close();
+        $date = null;
+        $responses = [];
 
-            if ($date === null) {
-                return false;
-            }
-
-            return (object)[
-                'user_id' => $user->id,
-                'quiz_id' => $quiz->id,
-                'date_of_attempt' => $date,
-                'responses' => $responses,
+        $this->queryAll($query, function($row) use (&$date, &$responses) {
+            $date = $row['date_of_attempt'];
+            $responses[$row['question_no']] = (object)[
+                'submitted' => $row['submitted'],
+                'answer' => $row['answer'],
             ];
+        });
+
+        if ($date === null) {
+            return false;
         }
-        throw new \Exception('Connection to DB reset!');
+
+        return (object)[
+            'user_id' => $user->id,
+            'quiz_id' => $quiz->id,
+            'date_of_attempt' => $date,
+            'responses' => $responses,
+        ];
     }
 
     public function getQuestions($id)
@@ -169,29 +146,23 @@ class QuizManager
         $query = $this->db->buildQuery(
             "
             SELECT q.text, q.opt_a, q.opt_b, q.opt_c, q.opt_d, q.no, q.answer
-                FROM question q
-                INNER JOIN quiz ON quiz.id = q.quiz_id
-                WHERE quiz.id = :id
-                ORDER BY q.no
+            FROM question q
+            INNER JOIN quiz ON quiz.id = q.quiz_id
+            WHERE quiz.id = :id
+            ORDER BY q.no
             ",
             ['id' => $id]
         );
 
-        $results = [];
-        if ($result = $this->db->getConnection()->query($query)) {
-            while ($row = $result->fetch_assoc()) {
-                $results[] = (object)[
-                    'text' => $row['text'],
-                    'answer' => $row['answer'],
-                    'no' => $row['no'],
-                    'quiz_id' => $id,
-                    'options' => [$row['opt_a'], $row['opt_b'], $row['opt_c'], $row['opt_d']],
-                ];
-            }
-            $result->close();
-            return $results;
-        }
-        throw new \Exception('Connection to DB reset!');
+        return $this->queryAll($query, function($row) use ($id) {
+            return (object)[
+                'text' => $row['text'],
+                'answer' => $row['answer'],
+                'no' => $row['no'],
+                'quiz_id' => $id,
+                'options' => [$row['opt_a'], $row['opt_b'], $row['opt_c'], $row['opt_d']],
+            ];
+        });
     }
 
     private function getQuizzes($limit, $offset, $availability)
@@ -205,23 +176,15 @@ class QuizManager
         $query = $this->db->buildQuery(
             "
             SELECT quiz.id, quiz.duration, quiz.title, a.name as author
-                FROM quiz
-                INNER JOIN `user` a ON a.id = quiz.author_id
-                $condition
-                LIMIT :limit OFFSET :offset
+            FROM quiz
+            INNER JOIN `user` a ON a.id = quiz.author_id
+            $condition
+            LIMIT :limit OFFSET :offset
             ",
             ['limit' => $limit, 'offset' => $offset]
         );
 
-        $results = [];
-        if ($result = $this->db->getConnection()->query($query)) {
-            while ($row = $result->fetch_assoc()) {
-                $results[] = (object)$row;
-            }
-            $result->close();
-            return $results;
-        }
-        throw new \Exception('Connection to DB reset! ' . $this->db->getConnection()->error);
+        return $this->queryAll($query);
     }
 
     public function addSubmission($user, $quiz, $responses)
@@ -248,5 +211,97 @@ class QuizManager
             throw new \Exception('Answer not recorded! Reason: ' . $this->db->getConnection()->error);
         }
         return $this->db->getConnection()->insert_id;
+    }
+
+    public function addQuestion($quiz, $no, $text, $answer, $options)
+    {
+        $query = $this->db->buildQuery(
+            "
+            INSERT INTO question (quiz_id, no, text, answer, opt_a, opt_b, opt_c, opt_d)
+                VALUES (:quiz_id, :no, ':text', :answer, ':opt_a', ':opt_b', ':opt_c', ':opt_d')
+            ",
+            [
+                'quiz_id' => $quiz->id, 'no' => $no,
+                'text' => $text, 'answer' => $answer,
+                'opt_a' => $options[0],
+                'opt_b' => $options[1],
+                'opt_c' => $options[2],
+                'opt_d' => $options[3],
+            ]
+        );
+
+        return $this->execute($query);
+    }
+
+    public function updateQuestion($quiz, $no, $question)
+    {
+        $query = $this->db->buildQuery(
+            "
+            UPDATE question
+            SET
+                no = :no,
+                text = ':text',
+                answer = :answer,
+                opt_a = ':opt_a',
+                opt_b = ':opt_b',
+                opt_c = ':opt_c',
+                opt_d = ':opt_d'
+            WHERE
+                quiz_id = :quiz_id AND no = :orig_no
+            ",
+            [
+                'quiz_id' => $quiz->id,
+                'orig_no' => $no,
+                'no' => $question->no,
+                'text' => $question->text,
+                'answer' => $question->answer,
+                'opt_a' => $question->options[0],
+                'opt_b' => $question->options[1],
+                'opt_c' => $question->options[2],
+                'opt_d' => $question->options[3],
+            ]
+        );
+
+        return $this->execute($query);
+    }
+
+    public function findQuestion($quiz, $no)
+    {
+        $query = $this->db->buildQuery(
+            "
+            SELECT q.text, q.answer, q.opt_a, q.opt_b, q.opt_c, q.opt_d
+            FROM question q
+            WHERE q.quiz_id = :quiz_id AND q.no = :no
+            ",
+            ['quiz_id' => $quiz->id, 'no' => $no]
+        );
+
+        return $this->queryOne($query, function($row) use (&$quiz, $no) {
+            return [
+                'quiz_id' => $quiz->id,
+                'no' => $no,
+                'text' => $row['text'],
+                'answer' => $row['answer'],
+                'options' => [
+                    $row['opt_a'],
+                    $row['opt_b'],
+                    $row['opt_c'],
+                    $row['opt_d'],
+                ],
+            ];
+        });
+    }
+
+    public function deleteQuestion($quiz, $no)
+    {
+        $query = $this->db->buildQuery(
+            "
+            DELETE FROM question
+            WHERE quiz_id = :quiz_id AND no = :no;
+            ",
+            ['quiz_id' => $quiz->id, 'no' => $no]
+        );
+
+        $this->execute($query);
     }
 }

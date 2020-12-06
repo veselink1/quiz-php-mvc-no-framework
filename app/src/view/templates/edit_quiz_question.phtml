@@ -1,0 +1,90 @@
+<div class="container pt-5">
+
+    <?php
+    if ($context->question) {
+    ?>
+        <form action="<?php $tools->link("quiz/question/delete?quiz={$context->quiz->id}&no={$context->question->no}") ?>" method="POST">
+            <button type="submit" class="btn btn-lg btn-outline-danger float-right">DELETE</button>
+        </form>
+    <?php
+    }
+    ?>
+
+    <form method="POST">
+
+        <h1 class="mb-3">
+            <?php $tools->text($context->quiz->title); ?>
+        </h1>
+
+        <h2 class="mb-3">
+            <?php
+            if ($context->question) {
+                $tools->text('Edit Question');
+            } else {
+                $tools->text('New Question');
+            }
+            ?>
+        </h2>
+
+        <div class="input-group input-group-lg mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Question #</span>
+            </div>
+            <input name="no" type="number" min="0" max="1000" placeholder="Number" class="form-control" value="<?php if ($context->question) $tools->text($context->question->no); ?>">
+        </div>
+
+        <div class="input-group input-group-lg mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Question Text</span>
+            </div>
+            <input name="text" type="text" placeholder="Text" class="form-control" value="<?php if ($context->question) $tools->text($context->question->text); ?>">
+        </div>
+
+        <div class="input-group input-group-lg mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Answer</span>
+            </div>
+            <input name="answer" type="text" placeholder="A" minlength="1" maxlength="1" class="form-control" value="<?php if ($context->question) $tools->text(chr($context->question->answer + ord('A'))); else $tools->text("A"); ?>" >
+        </div>
+
+        <h3>Options</h3>
+
+        <div class="input-group input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Option A</span>
+            </div>
+            <input name="opt_a" type="text" placeholder="Option A" class="form-control" value="<?php if ($context->question) $tools->text($context->question->options[0]); ?>" >
+        </div>
+
+        <div class="input-group input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Option B</span>
+            </div>
+            <input name="opt_b" type="text" placeholder="Option B" class="form-control" value="<?php if ($context->question) $tools->text($context->question->options[1]); ?>" >
+        </div>
+
+        <div class="input-group input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Option C</span>
+            </div>
+            <input name="opt_c" type="text" placeholder="Option C" class="form-control" value="<?php if ($context->question) $tools->text($context->question->options[2]); ?>" >
+        </div>
+
+        <div class="input-group input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Option D</span>
+            </div>
+            <input name="opt_d" type="text" placeholder="Option D" class="form-control" value="<?php if ($context->question) $tools->text($context->question->options[3]); ?>" >
+        </div>
+
+        <div class="text-right">
+            <button type="submit" value="submit" class="btn btn-primary btn-lg mt-3">Save Changes</button>
+        </div>
+
+    </form>
+
+</div>
+
+<?php
+return ['extends' => '_layout'];
+?>

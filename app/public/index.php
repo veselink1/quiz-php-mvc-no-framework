@@ -38,6 +38,21 @@ switch ($route) {
         $action = 'deleteQuizAction';
         break;
 
+    case '/quiz/question/new':
+        $controllerName = 'QuizController';
+        $action = 'addQuestionAction';
+        break;
+
+    case '/quiz/question/edit':
+        $controllerName = 'QuizController';
+        $action = 'editQuestionAction';
+        break;
+
+    case '/quiz/question/delete':
+        $controllerName = 'QuizController';
+        $action = 'deleteQuestionAction';
+        break;
+
     case '/login':
         $controllerName = 'UserController';
         $action = 'loginAction';
